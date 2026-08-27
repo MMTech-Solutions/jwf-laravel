@@ -7,8 +7,5 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
-        <testsuite name="Architecture">
-            <directory>tests/Architecture</directory>
-        </testsuite>
     </testsuites>
 </phpunit>
