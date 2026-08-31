@@ -14,6 +14,15 @@ JWF persiste definiciones de forma relacional, no como un documento JSON complet
 
 El uso de `LONGTEXT` permite representar valores simples, arreglos y objetos sin perder una convención única. El tipo y las reglas del nodo validan y normalizan antes de persistir; la columna no infiere el tipo.
 
+El adaptador mantiene perfiles internos para las garantías de tipos de input. Al persistir un borrador con un input
+`email` o `url`, añade una referencia a la versión predeterminada de `jwf.default.email` o `jwf.default.url`; la
+referencia queda congelada en la versión de formulario. Estos perfiles no requieren configuración ni creación por la
+aplicación host.
+
+Las definiciones internas se resuelven por nombre y se versionan igual que cualquier otro perfil: si cambian sus tipos
+compatibles o reglas declarativas, el adaptador crea una nueva versión para los borradores posteriores. Las versiones ya
+referenciadas no se modifican.
+
 Para cargar un formulario se recuperan todos los nodos de la versión en una consulta ordenada y se reconstruye el árbol en memoria mediante `parent_id`. No se hace una consulta por hijo.
 
 ## Copias y eliminación

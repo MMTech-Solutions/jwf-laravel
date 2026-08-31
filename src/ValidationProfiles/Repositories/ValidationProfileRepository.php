@@ -14,6 +14,7 @@ use Mmt\Jwf\ValidationProfiles\Domain\ValidationProfile;
 use Mmt\Jwf\ValidationProfiles\Domain\ValidationProfileVersion;
 use Mmt\Jwf\ValidationProfiles\Domain\ValidationProfileVersionReference;
 use Mmt\JwfLaravel\Exceptions\JwfLaravelException;
+use Mmt\JwfLaravel\Support\DefaultValidationProfile;
 use stdClass;
 
 final readonly class ValidationProfileRepository implements ValidationProfileVersionResolver
@@ -85,6 +86,61 @@ final readonly class ValidationProfileRepository implements ValidationProfileVer
         return $this->findVersion($reference->versionId->toString());
     }
 
+    public function ensureDefault(DefaultValidationProfile $profile): ValidationProfileVersionReference
+    {
+        return $this->database->connection()->transaction(function () use ($profile): ValidationProfileVersionReference {
+            $profileRecord = $this->database->table('jwf_validation_profiles')
+                ->where('name', $profile->name)
+                ->lockForUpdate()
+                ->first();
+            $now = now();
+            if (!$profileRecord instanceof stdClass) {
+                $profileId = NodeId::generate();
+                $this->database->table('jwf_validation_profiles')->insert([
+                    'id' => $profileId->toString(),
+                    'name' => $profile->name,
+                    'active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            } else {
+                $profileId = NodeId::fromString($this->string($profileRecord->id));
+            }
+
+            $types = $this->encodeTypes($profile->compatibleTypes);
+            $rules = $this->encodeRules($profile->rules);
+            $versionRecord = $this->database->table('jwf_validation_profile_versions')
+                ->where('profile_id', $profileId->toString())
+                ->orderByDesc('number')
+                ->first();
+            if ($versionRecord instanceof stdClass
+                && $this->string($versionRecord->compatible_types) === $types
+                && $this->string($versionRecord->rules) === $rules
+            ) {
+                return new ValidationProfileVersionReference(
+                    $profileId,
+                    NodeId::fromString($this->string($versionRecord->id)),
+                    $this->integer($versionRecord->number),
+                    $profile->compatibleTypes,
+                );
+            }
+
+            $number = $versionRecord instanceof stdClass ? $this->integer($versionRecord->number) + 1 : 1;
+            $versionId = NodeId::generate();
+            $this->database->table('jwf_validation_profile_versions')->insert([
+                'id' => $versionId->toString(),
+                'profile_id' => $profileId->toString(),
+                'number' => $number,
+                'compatible_types' => $types,
+                'rules' => $rules,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            return new ValidationProfileVersionReference($profileId, $versionId, $number, $profile->compatibleTypes);
+        });
+    }
+
     public function findVersion(string $versionId): ValidationProfileVersion
     {
         $record = $this->database->table('jwf_validation_profile_versions')->where('id', $versionId)->first();
@@ -147,5 +203,23 @@ final readonly class ValidationProfileRepository implements ValidationProfileVer
         }
 
         return $value;
+    }
+
+    /** @param list<InputType> $types */
+    private function encodeTypes(array $types): string
+    {
+        return json_encode(
+            array_map(static fn (InputType $type): string => $type->value, $types),
+            JSON_THROW_ON_ERROR,
+        );
+    }
+
+    /** @param list<RuleDefinition> $rules */
+    private function encodeRules(array $rules): string
+    {
+        return json_encode(
+            array_map(static fn (RuleDefinition $rule): array => $rule->toArray(), $rules),
+            JSON_THROW_ON_ERROR,
+        );
     }
 }

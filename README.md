@@ -28,4 +28,12 @@ Una copia conserva el árbol, IDs lógicos, opciones, configuración y referenci
 
 Los inputs de archivo pueden declarar `maxSizeKb`, `allowedMimeTypes` y `allowedExtensions` en su configuración. Los límites del input solo pueden restringir los límites globales de `config/jwf.php`.
 
+## Validación de tipos integrada
+
+Los inputs `email` y `url` reciben automáticamente los perfiles internos versionados `jwf.default.email` y
+`jwf.default.url` cuando se crea o guarda un borrador. Sus versiones iniciales aplican las reglas `email` y `url` de
+Laravel; no hace falta crear perfiles ni publicar configuración en la aplicación host. La referencia queda incluida en
+el documento persistido y se congela al publicar.
+Los perfiles propios pueden añadirse al input para imponer reglas adicionales, como `required` o `max`.
+
 La aplicación host es responsable de autorización, exposición HTTP, retención, privacidad y anonimización.

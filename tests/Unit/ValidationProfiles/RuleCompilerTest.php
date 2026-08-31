@@ -16,11 +16,12 @@ final class RuleCompilerTest extends TestCase
         $compiled = (new RuleCompiler())->compile([
             new RuleDefinition('required'),
             new RuleDefinition('integer'),
+            new RuleDefinition('url'),
             new RuleDefinition('between', ['min' => 1, 'max' => 5]),
             new RuleDefinition('in', ['values' => ['one', 'two']]),
         ]);
 
-        self::assertSame(['required', 'integer', 'between:1,5', 'in:one,two'], $compiled);
+        self::assertSame(['required', 'integer', 'url', 'between:1,5', 'in:one,two'], $compiled);
     }
 
     public function testItRejectsUnknownOrUnsafeRules(): void

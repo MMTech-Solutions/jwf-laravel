@@ -17,3 +17,9 @@ Los artefactos de archivo se resuelven y eliminan mediante operaciones explícit
 La configuración de un input de archivo puede restringir `maxSizeKb`, `allowedMimeTypes` y `allowedExtensions`. Estas restricciones complementan, pero nunca amplían, los límites globales del paquete.
 
 La expresión de perfiles se almacena como reglas declarativas con nombre y parámetros. El adaptador Laravel las compila a las reglas nativas adecuadas: por ejemplo, el perfil `integer` se traduce a `integer`, no a `numeric`, que también admite decimales.
+
+Los inputs `email` y `url` se hidratan y persisten con sus discriminadores de tipo, normalizan valores string mediante
+el core y reciben automáticamente los perfiles internos versionados `jwf.default.email` y `jwf.default.url` al crear o
+guardar un borrador. Sus primeras versiones declaran las reglas `email` y `url`, que el adaptador compila a las reglas
+homónimas de Laravel. La aplicación host no debe crear ni asociar esos perfiles; puede añadir perfiles versionados
+propios para imponer restricciones adicionales.

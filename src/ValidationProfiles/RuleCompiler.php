@@ -17,6 +17,7 @@ final class RuleCompiler
         'numeric',
         'boolean',
         'email',
+        'url',
         'date',
     ];
 

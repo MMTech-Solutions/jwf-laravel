@@ -79,6 +79,84 @@ final class JwfLifecycleTest extends TestCase
         self::assertStringNotContainsString('top-secret', $row->value);
     }
 
+    public function testItPersistsValidatesAndSubmitsUrlInputs(): void
+    {
+        $jwf = $this->jwf();
+        [$draft, $form, $input] = $this->document(InputType::Url);
+
+        $stored = $jwf->forms()->create('Website', $draft);
+        self::assertSame(
+            'url',
+            DB::table('jwf_form_nodes')->where('kind', 'input')->value('type'),
+        );
+        self::assertDatabaseHas('jwf_validation_profiles', ['name' => 'jwf.default.url']);
+        self::assertDatabaseHas('jwf_validation_profile_versions', [
+            'number' => 1,
+            'compatible_types' => json_encode(['url'], JSON_THROW_ON_ERROR),
+            'rules' => json_encode([['name' => 'url', 'parameters' => []]], JSON_THROW_ON_ERROR),
+        ]);
+        self::assertSame(
+            $stored->document->root->toArray(),
+            $jwf->forms()->get($stored->document->id->toString())->document->root->toArray(),
+        );
+        $stored = $jwf->forms()->saveDraft($stored->document);
+        self::assertSame(
+            1,
+            DB::table('jwf_form_node_profile_versions as pivot')
+                ->join('jwf_form_nodes as nodes', 'nodes.id', '=', 'pivot.form_node_id')
+                ->where('nodes.form_version_id', $stored->document->id->toString())
+                ->count(),
+        );
+
+        $published = $jwf->forms()->publish($stored->document->id->toString());
+        $invalid = $jwf->validate(
+            $published->document->id->toString(),
+            $form->id->toString(),
+            [$input->name => 'not-a-url'],
+        );
+        self::assertFalse($invalid->isValid());
+
+        $result = $jwf->submit(
+            $published->document->id->toString(),
+            $form->id->toString(),
+            [$input->name => 'https://example.com/path'],
+        );
+        self::assertTrue($result->isValid());
+        self::assertNotNull($result->submission);
+        self::assertSame('https://example.com/path', $result->submission->values[0]->value);
+    }
+
+    public function testItPersistsValidatesAndSubmitsEmailInputs(): void
+    {
+        $jwf = $this->jwf();
+        [$draft, $form, $input] = $this->document(InputType::Email);
+
+        $stored = $jwf->forms()->create('Contact email', $draft);
+        self::assertDatabaseHas('jwf_validation_profiles', ['name' => 'jwf.default.email']);
+        self::assertDatabaseHas('jwf_validation_profile_versions', [
+            'number' => 1,
+            'compatible_types' => json_encode(['email'], JSON_THROW_ON_ERROR),
+            'rules' => json_encode([['name' => 'email', 'parameters' => []]], JSON_THROW_ON_ERROR),
+        ]);
+
+        $published = $jwf->forms()->publish($stored->document->id->toString());
+        $invalid = $jwf->validate(
+            $published->document->id->toString(),
+            $form->id->toString(),
+            [$input->name => 'not-an-email'],
+        );
+        self::assertFalse($invalid->isValid());
+
+        $result = $jwf->submit(
+            $published->document->id->toString(),
+            $form->id->toString(),
+            [$input->name => 'ada@example.com'],
+        );
+        self::assertTrue($result->isValid());
+        self::assertNotNull($result->submission);
+        self::assertSame('ada@example.com', $result->submission->values[0]->value);
+    }
+
     public function testItCanFaithfullyCloneEveryVersionState(): void
     {
         $jwf = $this->jwf();

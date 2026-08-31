@@ -7,5 +7,6 @@
 - La gestión de archivos debe validar tamaño, cantidad y MIME/extensión permitidos; generar identificadores no predecibles; guardar con un disco configurado; y devolver una `FileReference` en vez de usar el nombre original como identidad.
 - No exponer rutas privadas o metadatos sensibles de archivos al serializar formularios o respuestas.
 - Las reglas Laravel generadas desde perfiles se validan al publicar la versión. No ejecutar reglas que permitan callbacks o código persistido desde la base de datos.
+- Los perfiles internos del adaptador se crean con reglas declarativas fijas, se asocian antes de persistir el borrador y quedan versionados junto con el formulario. No requieren configuración de la aplicación host.
 - Los archivos nunca se eliminan automáticamente. Al eliminar un envío, sus artefactos quedan disponibles para inspección y eliminación manual explícita por la aplicación integradora.
 - La privacidad, retención efectiva y anonimización son responsabilidad de la aplicación integradora; el paquete aporta operaciones autorizables de consulta y eliminación, no políticas automáticas.

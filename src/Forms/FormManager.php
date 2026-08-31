@@ -23,6 +23,7 @@ final readonly class FormManager
 {
     public function __construct(
         private FormRepository $forms,
+        private DefaultInputProfiles $defaultProfiles,
         private ValidationProfileRepository $profiles,
         private RuleCompiler $rules,
         private JwfAuthorizer $authorizer,
@@ -36,7 +37,7 @@ final readonly class FormManager
     ): StoredFormVersion {
         $this->authorizer->authorize(JwfOperation::ManageForms, $context);
 
-        return $this->forms->create($name, $draft);
+        return $this->forms->create($name, $this->defaultProfiles->apply($draft));
     }
 
     public function saveDraft(
@@ -45,7 +46,7 @@ final readonly class FormManager
     ): StoredFormVersion {
         $this->authorizer->authorize(JwfOperation::ManageForms, $context);
 
-        return $this->forms->saveDraft($draft);
+        return $this->forms->saveDraft($this->defaultProfiles->apply($draft));
     }
 
     public function get(
