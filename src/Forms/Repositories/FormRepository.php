@@ -149,10 +149,11 @@ final readonly class FormRepository
         $source = $this->find($sourceVersionId);
 
         return $this->database->connection()->transaction(function () use ($source): StoredFormVersion {
-            $maximum = $this->database->table('jwf_form_versions')
+            $versions = $this->database->table('jwf_form_versions')
                 ->where('template_id', $source->templateId)
                 ->lockForUpdate()
-                ->max('number');
+                ->get(['number']);
+            $maximum = $versions->max('number');
             $nextNumber = ($maximum === null ? 0 : $this->integer($maximum)) + 1;
             $copy = new FormDocument(NodeId::generate(), $source->document->root, FormState::Draft);
             $this->insertVersion($source->templateId, $nextNumber, $copy);

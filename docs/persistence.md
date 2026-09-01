@@ -27,6 +27,6 @@ Para cargar un formulario se recuperan todos los nodos de la versión en una con
 
 ## Copias y eliminación
 
-Una versión nueva se crea como copia fiel de otra versión de la misma plantilla. Conserva los IDs lógicos y todo el contenido de la definición, incluidas las referencias exactas a perfiles. Solo cambia el ID de versión, se asigna el siguiente número y nace como borrador.
+Una versión nueva se crea como copia fiel de otra versión de la misma plantilla. Conserva los IDs lógicos y todo el contenido de la definición, incluidas las referencias exactas a perfiles. Solo cambia el ID de versión, se asigna el siguiente número y nace como borrador. La asignación del número bloquea las versiones de la plantilla dentro de la transacción antes de calcular el siguiente valor; no bloquea una consulta agregada, para conservar compatibilidad con PostgreSQL.
 
 Una plantilla o versión con envíos no puede eliminarse. Sin envíos, sus nodos, opciones y asociaciones internas se eliminan en cascada. Eliminar un envío elimina sus valores, pero conserva los artefactos y archivos para que la aplicación integradora decida posteriormente qué hacer con ellos.

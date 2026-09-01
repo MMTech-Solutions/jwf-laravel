@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mmt\JwfLaravel\Tests\Feature;
 
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Mmt\Jwf\Forms\Domain\FormDocument;
 use Mmt\Jwf\Forms\Domain\Input\InputType;
@@ -175,6 +176,23 @@ final class JwfLifecycleTest extends TestCase
             self::assertNotSame($source->document->id->toString(), $copy->document->id->toString());
         }
         self::assertSame([2, 3, 4], [$draftCopy->number, $publishedCopy->number, $archivedCopy->number]);
+    }
+
+    public function testItDoesNotUseAnAggregateToLockFormVersionsWhenCloning(): void
+    {
+        $queries = [];
+        DB::listen(static function (QueryExecuted $query) use (&$queries): void {
+            $queries[] = strtolower($query->sql);
+        });
+
+        [$draft] = $this->document(InputType::Text);
+        $source = $this->jwf()->forms()->create('Clone lock', $draft);
+        $this->jwf()->forms()->cloneVersion($source->document->id->toString());
+
+        self::assertFalse(collect($queries)->contains(
+            static fn (string $sql): bool => str_contains($sql, 'max("number")')
+                && str_contains($sql, 'jwf_form_versions'),
+        ));
     }
 
     /** @param list<\Mmt\Jwf\ValidationProfiles\Domain\ValidationProfileVersionReference> $profiles
